@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>조약돌 마을 · 이모티콘 멘트 추천 앱</title>
+  <!-- Tailwind CDN (Play) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 폰트 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --olive-50:#EFF5E6; --olive-100:#DDECC7; --olive-200:#C8DDB2; --olive-300:#B0D094;
+      --olive-700:#166534; --olive-800:#14532d; --olive-900:#0f3d22;
+      --brown-200:#CBB89D; --brown-300:#BFA888;
+    }
+    html,body{height:100%;}
+    body{font-family:"Noto Sans KR",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;}
+    .chip{border:1px solid rgb(209 250 229); background:rgba(236,253,245,.7); color:#065f46; padding:.15rem .5rem; border-radius:9999px; font-size:10px;}
+    .btn{border-radius:12px; padding:.5rem .75rem; font-weight:600;}
+    .btn-olive{background:#059669; color:#fff;} .btn-olive:hover{background:#047857;}
+    .btn-lite{background:#e7e5e4; color:#111827;} .btn-lite:hover{background:#d6d3d1;}
+    .toast{position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#065f46; color:#fff; padding:.5rem .75rem; border-radius:10px; font-size:.85rem; opacity:0; transition:opacity .2s, transform .2s;}
+    .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  </style>
+</head>
+<body class="min-h-screen w-full relative p-4 sm:p-6" style="background:linear-gradient(to bottom,var(--olive-50),var(--olive-100))">
+  <!-- 배경 장식 -->
+  <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-40"
+         style="background:radial-gradient(circle at center,var(--olive-200) 0%, var(--olive-300) 60%, transparent 70%)"></div>
+    <div class="absolute -bottom-16 -left-10 h-80 w-80 rounded-full blur-3xl opacity-30"
+         style="background:radial-gradient(circle at center,var(--brown-200) 0%, var(--brown-300) 60%, transparent 70%)"></div>
+  </div>
+
+  <div class="relative mx-auto max-w-5xl">
+    <!-- 헤더: 좌측 로고 / 우측 타이틀 -->
+    <div class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+      <div class="inline-flex items-center gap-2 text-2xl sm:text-3xl font-extrabold tracking-tight" style="color:var(--olive-800)">
+        <span class="px-2 py-0.5 rounded-lg" style="background:#d1fae5; color:#047857; border:1px solid #a7f3d0">조약돌 마을</span>
+      </div>
+      <div class="text-xl sm:text-2xl font-extrabold tracking-tight" style="color:var(--olive-900)">
+        이모티콘 <span style="color:#065f46">멘트 추천</span> 앱
+        <span class="ml-2 text-xs align-top font-semibold text-stone-500">v0.4</span>
+      </div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="w-full">
+      <div class="grid grid-cols-2 w-full mb-4 rounded-xl" style="background:#d1fae5">
+        <button id="tab-make-btn" class="py-2 font-semibold">추천 만들기</button>
+        <button id="tab-favs-btn" class="py-2 font-semibold text-stone-500">즐겨찾기</button>
+      </div>
+
+      <!-- 추천 만들기 -->
+      <div id="tab-make" class="rounded-2xl border border-emerald-200/60 bg-white/80 backdrop-blur p-4 sm:p-6 space-y-4">
+        <!-- 컨트롤 -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">화자</div>
+            <select id="speaker" class="w-full rounded-xl border p-2"></select>
+          </div>
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">청자</div>
+            <select id="listener" class="w-full rounded-xl border p-2"></select>
+          </div>
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">장소</div>
+            <select id="place" class="w-full rounded-xl border p-2"></select>
+          </div>
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">주제(키워드)</div>
+            <input id="topic" class="w-full rounded-xl border p-2" placeholder="예: 고마움, 응원, 사랑, 위로, 미안, 약속..." />
+            <div class="text-[10px] text-emerald-900/60 mt-1">예: "감사/thanks, 응원/cheer, 공부/study"</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">길이 제한 (글자 수)</div>
+            <input id="len" type="range" min="2" max="8" value="8" class="w-full" />
+            <div class="text-[10px] text-emerald-900/60 mt-1">현재 <span id="lenLabel">8</span>자 이하 (최대 8자)</div>
+          </div>
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">추천 개수</div>
+            <input id="count" type="number" value="20" min="1" max="50" class="w-full rounded-xl border p-2" />
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="rand" class="btn btn-olive">랜덤 채우기</button>
+            <button id="reshuffle" class="btn btn-lite">새로 추천</button>
+          </div>
+        </div>
+
+        <!-- 현재 조건 뱃지 -->
+        <div class="flex flex-wrap gap-2 text-xs" id="chips"></div>
+
+        <!-- 추천 목록 -->
+        <div id="list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-2"></div>
+      </div>
+
+      <!-- 즐겨찾기 -->
+      <div id="tab-favs" class="hidden rounded-2xl border border-emerald-200/60 bg-white/80 backdrop-blur p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-semibold">내 즐겨찾기</div>
+          <button id="clearFavs" class="btn btn-lite">모두 비우기</button>
+        </div>
+        <div id="favEmpty" class="text-emerald-900/70 text-sm">아직 즐겨찾기가 없어요. 카드의 ★ 를 눌러 저장해보세요.</div>
+        <div id="favs" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">복사 완료!</div>
+
+  <script>
+  // ===== 데이터 =====
+  const SPEAKERS = [
+    { id:"me",label:"나" },{ id:"friend",label:"친구" },{ id:"lover",label:"연인" },{ id:"mom",label:"엄마" },{ id:"dad",label:"아빠" },
+    { id:"bro",label:"형/오빠" },{ id:"sis",label:"누나/언니" },{ id:"sibling",label:"동생" },{ id:"teacher",label:"선생님" },{ id:"boss",label:"상사" },
+    { id:"coworker",label:"동료" },{ id:"team",label:"팀원" },{ id:"coach",label:"코치" },{ id:"neighbor",label:"이웃" },{ id:"senior",label:"선배" },
+    { id:"junior",label:"후배" },{ id:"parent",label:"부모님" },{ id:"child",label:"자녀" },{ id:"customer",label:"고객" },{ id:"ceo",label:"사장님" },
+  ];
+  const LISTENERS = [
+    { id:"you",label:"너/당신" },{ id:"friend",label:"친구" },{ id:"lover",label:"연인" },{ id:"teacher",label:"선생님" },{ id:"boss",label:"상사" },
+    { id:"coworker",label:"동료" },{ id:"team",label:"팀원" },{ id:"mom",label:"엄마" },{ id:"dad",label:"아빠" },{ id:"bro",label:"형/오빠" },
+    { id:"sis",label:"누나/언니" },{ id:"sibling",label:"동생" },{ id:"neighbor",label:"이웃" },{ id:"senior",label:"선배" },{ id:"junior",label:"후배" },
+    { id:"parent",label:"부모님" },{ id:"child",label:"자녀" },{ id:"customer",label:"고객" },{ id:"class",label:"반 친구들" },{ id:"group",label:"우리팀" },
+  ];
+  const PLACES = [
+    { id:"chat",label:"채팅중" },{ id:"home",label:"집" },{ id:"school",label:"학교" },{ id:"class",label:"수업" },{ id:"office",label:"회사" },
+    { id:"cafe",label:"카페" },{ id:"restaurant",label:"식당" },{ id:"subway",label:"지하철" },{ id:"bus",label:"버스" },{ id:"street",label:"길거리" },
+    { id:"gym",label:"체육관" },{ id:"hospital",label:"병원" },{ id:"park",label:"공원" },{ id:"library",label:"도서관" },{ id:"market",label:"마트" },
+    { id:"travel",label:"여행" },{ id:"airport",label:"공항" },{ id:"hotel",label:"호텔" },{ id:"church",label:"교회" },{ id:"studyroom",label:"스터디룸" },
+  ];
+  const TOPIC_MAP = { "고마움":"thanks","감사":"thanks","thanks":"thanks","응원":"cheer","화이팅":"cheer","격려":"cheer","사랑":"love","위로":"comfort","미안":"apology","사과":"apology","약속":"promise","기다려":"promise","안녕":"greeting","하이":"greeting","잘가":"farewell","축하":"congrats","생일":"birthday","기념일":"anniv","지각":"late","늦음":"late","바쁨":"busy","바빠":"busy","아파":"sick","감기":"sick","공부":"study","일":"work","업무":"work" };
+
+  const PHRASES = [
+    {t:"안녕!",k:["greeting"]},{t:"좋은아침",k:["greeting"]},{t:"하이하이",k:["greeting"]},{t:"왔어?",k:["greeting"],l:["friend","you"]},
+    {t:"잘 지내?",k:["greeting"],l:["friend","lover"]},{t:"오늘도 화이팅",k:["cheer"],p:["school","office","class"]},{t:"고마워요",k:["thanks"],l:["teacher","boss"]},
+    {t:"고마워",k:["thanks"],l:["you","friend","lover"]},{t:"덕분이야",k:["thanks"],l:["friend","team","teacher"]},{t:"감사해요",k:["thanks"]},
+    {t:"정말 감사",k:["thanks"]},{t:"빈말 아냐",k:["thanks","love"]},{t:"힘내요!",k:["cheer","comfort"],l:["you","friend","lover"]},{t:"넌 할수있어",k:["cheer"],l:["you","friend"]},
+    {t:"파이팅",k:["cheer"],p:["school","office","gym"]},{t:"잘하고 있어",k:["cheer"]},{t:"멋져요",k:["cheer","congrats"]},{t:"네가 최고",k:["cheer","love"]},
+    {t:"사랑해",k:["love"],l:["lover","you"]},{t:"좋아해",k:["love"],l:["lover","friend"]},{t:"보고싶어",k:["love"],l:["lover","friend","mom","dad"]},
+    {t:"곁에 있을게",k:["love","comfort"]},{t:"내 편이야",k:["love","comfort"]},{t:"미안해",k:["apology"],l:["you","friend","lover"]},{t:"죄송해요",k:["apology"],l:["teacher","boss"]},
+    {t:"내 실수야",k:["apology"]},{t:"다음엔 더",k:["apology","cheer"]},{t:"곧 가요",k:["promise","late"],p:["school","office","cafe","travel"]},
+    {t:"이제 가요",k:["promise"],p:["home","office"]},{t:"금방 도착",k:["promise","late"]},{t:"조금 늦음",k:["late"]},{t:"기다려줘",k:["promise","love"]},
+    {t:"괜찮아",k:["comfort","love"]},{t:"천천히 해",k:["comfort","busy"]},{t:"네 탓 아냐",k:["comfort"]},{t:"내가 들을게",k:["comfort","love"]},
+    {t:"잘 가요",k:["farewell"]},{t:"또 보자",k:["farewell","promise"]},{t:"다음에 봐",k:["farewell","promise"]},{t:"연락줘",k:["promise"]},
+    {t:"축하해요",k:["congrats"]},{t:"대박이야",k:["congrats","cheer"]},{t:"역시 너야",k:["congrats","cheer"]},{t:"수고했어",k:["cheer","thanks"]},
+    {t:"집중하자",k:["study","work","cheer"],p:["class","office"]},{t:"끝까지 가자",k:["cheer","work"]},{t:"회의 고고",k:["work"],p:["office"]},
+    {t:"수업 시작",k:["study"],p:["class","school"]},{t:"숙제 했니?",k:["study"],s:["teacher"],l:["you"]},
+    {t:"몸 챙겨",k:["sick","comfort","love"]},{t:"감기 조심",k:["sick"]},{t:"바쁠 땐 톡",k:["busy","promise"],p:["office","school"]},
+    {t:"일단 쉬자",k:["sick","comfort","busy"]},{t:"엄마 사랑",k:["love"],s:["mom"],l:["you"]},{t:"아빠 화이팅",k:["cheer"],s:["dad"],l:["you"]},
+    {t:"선생님 감사",k:["thanks"],l:["teacher"]},{t:"선생님 최고",k:["cheer","thanks"],l:["teacher"]},
+    {t:"밥 먹자",k:["love","comfort","greeting"],p:["school","office","home","cafe"]},{t:"커피 한 잔",k:["love","work"],p:["cafe","office"]},
+    {t:"산책 갈래",k:["love","comfort"],p:["travel","home"]},{t:"영화 볼까",k:["love","greeting"],p:["home","travel"]},
+    {t:"팀 고!",k:["cheer","work"],l:["team"],p:["gym","school"]},{t:"같이 가자",k:["love","promise"],l:["team","friend","lover"]},
+    {t:"패스 줘!",k:["cheer"],p:["gym","school"]},{t:"굿플레이",k:["cheer","congrats"],p:["gym"]},{t:"생일 축하",k:["birthday","congrats"]},
+    {t:"해피데이",k:["birthday","congrats"]},{t:"우리의 날",k:["anniv","love"]},{t:"함께라 좋아",k:["anniv","love"]},
+    {t:"곧 봐요",k:["promise","farewell"]},{t:"잘자요",k:["love","comfort"]},{t:"깨톡줘",k:["promise"]},{t:"잠시만요",k:["busy","late"]},
+    {t:"응 괜찮아",k:["comfort"]},{t:"오늘도 굿",k:["cheer"]},{t:"네 덕분",k:["thanks"]},{t:"든든해",k:["love","comfort"]},
+    {t:"함께해",k:["love","cheer"]},{t:"기억할게",k:["love","thanks"]},{t:"멋지다!",k:["cheer","congrats"]},{t:"최고야",k:["cheer","love"]},
+    {t:"괜춘해",k:["comfort"]},{t:"무리마",k:["comfort"]},{t:"곧봐",k:["promise"]},{t:"갈게!",k:["promise"]},{t:"왔지!",k:["greeting"]},
+    {t:"우린 하나",k:["team","love","cheer"]},{t:"같이 하자",k:["team","love","cheer"]},{t:"집중!",k:["study","work"]},{t:"끝내자!",k:["work","cheer"]},
+    {t:"렛츠고",k:["cheer"]},{t:"나이스",k:["cheer","congrats"]},{t:"브보자",k:["promise","greeting"]},{t:"늘 고마워",k:["thanks","love"]},
+    {t:"기뻐요",k:["congrats","love"]},{t:"행복해",k:["love","congrats"]},{t:"보고파",k:["love"]},{t:"잘했어!",k:["cheer","congrats"]},
+    {t:"굿잡!",k:["cheer","congrats","work"]},{t:"반가워요",k:["greeting"]},{t:"오케이!",k:["promise","cheer"]},{t:"콜!",k:["promise"]},
+    {t:"좋아요",k:["love","cheer","congrats"]},{t:"괜찮아요",k:["comfort"]},{t:"쉬자",k:["comfort","sick"]},{t:"물 마셔",k:["sick","comfort"]},
+    {t:"잠 좀 자",k:["sick","comfort"]},{t:"약 먹어",k:["sick"]},{t:"따뜻이 입어",k:["sick","comfort"]},{t:"마스크 해",k:["sick"]},
+    {t:"무리 말자",k:["comfort","busy"]},{t:"천천히 가",k:["comfort","late"]},{t:"서둘게요",k:["late","promise"]},
+    {t:"회신 부탁",k:["work","promise"]},{t:"자료 부탁",k:["work","study"]},{t:"회의 언제?",k:["work"]},{t:"지금 가능?",k:["work","chat"]},
+    {t:"자리 없니?",k:["cafe","travel"]},{t:"자리 있어",k:["cafe","travel"]},{t:"어디야?",k:["promise","chat"]},{t:"도착했어",k:["promise","travel"]},
+    {t:"길 막혀",k:["late","travel"]},{t:"곧 출발",k:["promise","travel"]},{t:"먼저 가",k:["promise","late"]},{t:"이따 봐",k:["promise","farewell"]},
+    {t:"끝나고 톡",k:["work","promise"],p:["office","class"]},{t:"수업 끝나면",k:["study","promise"],p:["class","school"]},{t:"회의 후 톡",k:["work","promise"]},
+    {t:"조용히 해",k:["class","study"]},{t:"집중 부탁",k:["class","study"]},{t:"좋은 하루",k:["greeting","cheer"]},
+    {t:"평안하세요",k:["comfort","love"]},{t:"축복해요",k:["love","comfort"]},{t:"기도할게",k:["comfort","love"]},
+    {t:"응원할게",k:["cheer","love"]},{t:"믿고 가",k:["cheer","comfort"]},{t:"괜찮을 거야",k:["comfort"]},
+  ];
+
+  // ===== 유틸 =====
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const withinLimit = (s,limit)=> (s??"").trim().length <= limit;
+  const normTopic = (t)=>{ if(!t) return null; const key=t.trim().toLowerCase(); for(const [k,v] of Object.entries(TOPIC_MAP)){ if(k.toLowerCase()===key) return v; } return null; }
+  const score = (ph, {topic,speaker,listener,place,len})=>{
+    if(!withinLimit(ph.t,len)) return -999;
+    let s=0;
+    if(topic && (ph.k||[]).includes(topic)) s+=2;
+    if(speaker && (ph.s||[]).includes(speaker)) s+=1;
+    if(listener && (ph.l||[]).includes(listener)) s+=1;
+    if(place && (ph.p||[]).includes(place)) s+=1;
+    return s;
+  }
+  const toast = (msg)=>{
+    const el=$("#toast"); el.textContent=msg; el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"), 1300);
+  }
+
+  // ===== 초기화 =====
+  const fillSelect=(el,items)=>{ el.innerHTML=items.map(o=>`<option value="${o.id}">${o.label}</option>`).join(""); }
+  fillSelect($("#speaker"),SPEAKERS); fillSelect($("#listener"),LISTENERS); fillSelect($("#place"),PLACES);
+
+  // ===== 상태 =====
+  const state = {
+    speaker: "me", listener: "you", place: "chat",
+    topic: "", len: 8, count: 20, favs: JSON.parse(localStorage.getItem("emo-favs")||"[]")
+  };
+
+  // ===== 렌더 =====
+  function renderChips(){
+    const t = normTopic(state.topic);
+    const sTxt = SPEAKERS.find(x=>x.id===state.speaker)?.label;
+    const lTxt = LISTENERS.find(x=>x.id===state.listener)?.label;
+    const pTxt = PLACES.find(x=>x.id===state.place)?.label;
+    $("#chips").innerHTML = `
+      ${t ? `<span class="chip">주제: ${t}</span>`:""}
+      <span class="chip">화자: ${sTxt}</span>
+      <span class="chip">청자: ${lTxt}</span>
+      <span class="chip">장소: ${pTxt}</span>
+    `;
+  }
+
+  function recommend(){
+    const topic = normTopic(state.topic);
+    const scored = PHRASES.map(p=>({p, s: score(p,{topic, speaker:state.speaker, listener:state.listener, place:state.place, len:state.len})}))
+      .filter(x=>x.s>-999).sort((a,b)=>b.s-a.s);
+    const top = scored.slice(0,60);
+    const shuffled = [...top].sort(()=>Math.random()-0.5);
+    const backup = scored.slice(60,120).sort(()=>Math.random()-0.5);
+    const unique = new Set(); const pick=[];
+    for(const item of [...shuffled,...backup]){
+      if(!unique.has(item.p.t)){ unique.add(item.p.t); pick.push(item.p); }
+      if(pick.length>=state.count) break;
+    }
+    if(pick.length===0){
+      const pool = PHRASES.filter(p=>withinLimit(p.t,state.len));
+      pick.push(...pool.sort(()=>Math.random()-0.5).slice(0,state.count));
+    }
+    // 렌더
+    $("#list").innerHTML = pick.map(ph=>cardHTML(ph)).join("");
+    bindCardEvents();
+  }
+
+  function cardHTML(ph){
+    const starred = state.favs.includes(ph.t);
+    const tags = (ph.k||[]).slice(0,2).map(t=>`<span class="chip">${t}</span>`).join("");
+    return `
+      <div class="rounded-2xl border bg-white/90 hover:shadow transition-shadow p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-base font-semibold leading-snug break-keep">${ph.t}</div>
+          <div class="flex items-center gap-1">
+            <button class="btn-lite px-2 py-1 text-xs copy" data-t="${ph.t}">복사</button>
+            <button class="btn-lite px-2 py-1 text-xs star" data-t="${ph.t}" aria-label="즐겨찾기">${starred?"★":"☆"}</button>
+          </div>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1">${tags}</div>
+      </div>
+    `;
+  }
+  function bindCardEvents(){
+    $$(".copy").forEach(b=>b.addEventListener("click", async (e)=>{
+      const t=e.currentTarget.getAttribute("data-t"); await navigator.clipboard.writeText(t); toast("복사 완료!");
+    }));
+    $$(".star").forEach(b=>b.addEventListener("click",(e)=>{
+      const t=e.currentTarget.getAttribute("data-t");
+      const i=state.favs.indexOf(t);
+      if(i>=0) state.favs.splice(i,1); else state.favs.unshift(t);
+      localStorage.setItem("emo-favs", JSON.stringify(state.favs));
+      refreshFavs(); recommend();
+    }));
+  }
+
+  function refreshFavs(){
+    const empty = $("#favEmpty"); const grid=$("#favs");
+    if(state.favs.length===0){ empty.classList.remove("hidden"); grid.innerHTML=""; return; }
+    empty.classList.add("hidden");
+    grid.innerHTML = state.favs.map(t=>`
+      <div class="rounded-2xl border bg-white/90 p-3 flex items-start justify-between gap-2">
+        <div class="text-base font-semibold break-keep">${t}</div>
+        <div class="flex gap-1">
+          <button class="btn-lite px-2 py-1 text-xs copy" data-t="${t}">복사</button>
+          <button class="btn-lite px-2 py-1 text-xs unstar" data-t="${t}">삭제</button>
+        </div>
+      </div>`).join("");
+    $$(".copy").forEach(b=>b.addEventListener("click", async (e)=>{
+      const t=e.currentTarget.getAttribute("data-t"); await navigator.clipboard.writeText(t); toast("복사 완료!");
+    }));
+    $$(".unstar").forEach(b=>b.addEventListener("click",(e)=>{
+      const t=e.currentTarget.getAttribute("data-t"); state.favs=state.favs.filter(x=>x!==t);
+      localStorage.setItem("emo-favs", JSON.stringify(state.favs)); refreshFavs();
+    }));
+  }
+
+  // 이벤트 바인딩
+  $("#speaker").addEventListener("change",(e)=>{ state.speaker=e.target.value; renderChips(); recommend(); });
+  $("#listener").addEventListener("change",(e)=>{ state.listener=e.target.value; renderChips(); recommend(); });
+  $("#place").addEventListener("change",(e)=>{ state.place=e.target.value; renderChips(); recommend(); });
+  $("#topic").addEventListener("input",(e)=>{ state.topic=e.target.value; renderChips(); recommend(); });
+  $("#len").addEventListener("input",(e)=>{ state.len=+e.target.value; $("#lenLabel").textContent=state.len; recommend(); });
+  $("#count").addEventListener("input",(e)=>{ const v=Math.max(1,Math.min(50,+e.target.value||1)); state.count=v; recommend(); });
+  $("#rand").addEventListener("click",()=>{
+    const r = (arr)=>arr[Math.floor(Math.random()*arr.length)].id;
+    $("#speaker").value = state.speaker = r(SPEAKERS);
+    $("#listener").value = state.listener = r(LISTENERS);
+    $("#place").value = state.place = r(PLACES);
+    const topics = ["고마움","응원","사랑","위로","미안","약속","안녕","잘가","축하","지각","바쁨","아파","공부","일","생일","기념일"];
+    $("#topic").value = state.topic = topics[Math.floor(Math.random()*topics.length)];
+    renderChips(); recommend();
+  });
+  $("#reshuffle").addEventListener("click",()=>{ window.scrollTo({top:document.body.scrollHeight, behavior:"smooth"}); recommend(); });
+  $("#clearFavs").addEventListener("click",()=>{ state.favs=[]; localStorage.setItem("emo-favs","[]"); refreshFavs(); });
+
+  // 탭
+  const toMake=()=>{$("#tab-make").classList.remove("hidden"); $("#tab-favs").classList.add("hidden");
+    $("#tab-make-btn").classList.remove("text-stone-500"); $("#tab-favs-btn").classList.add("text-stone-500");}
+  const toFavs=()=>{$("#tab-favs").classList.remove("hidden"); $("#tab-make").classList.add("hidden");
+    $("#tab-favs-btn").classList.remove("text-stone-500"); $("#tab-make-btn").classList.add("text-stone-500"); refreshFavs();}
+  $("#tab-make-btn").addEventListener("click",toMake); $("#tab-favs-btn").addEventListener("click",toFavs);
+
+  // 최초 렌더
+  renderChips(); recommend(); refreshFavs();
+  </script>
+</body>
+</html>
