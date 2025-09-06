@@ -41,7 +41,7 @@
       </div>
       <div class="text-xl sm:text-2xl font-extrabold tracking-tight" style="color:var(--olive-900)">
         이모티콘 <span style="color:#065f46">멘트 추천</span> 앱
-        <span class="ml-2 text-xs align-top font-semibold text-stone-500">v0.6</span>
+        <span class="ml-2 text-xs align-top font-semibold text-stone-500">v0.8</span>
       </div>
     </div>
 
@@ -55,13 +55,13 @@
       <!-- 추천 만들기 -->
       <div id="tab-make" class="rounded-2xl border border-emerald-200/60 bg-white/80 backdrop-blur p-4 sm:p-6 space-y-4">
         <!-- 컨트롤 -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
           <div>
-            <div class="text-xs text-emerald-900/70 mb-1">화자</div>
+            <div class="text-xs text-emerald-900/70 mb-1">보내는 사람(화자)</div>
             <select id="speaker" class="w-full rounded-xl border p-2"></select>
           </div>
           <div>
-            <div class="text-xs text-emerald-900/70 mb-1">청자</div>
+            <div class="text-xs text-emerald-900/70 mb-1">받는 사람(청자)</div>
             <select id="listener" class="w-full rounded-xl border p-2"></select>
           </div>
           <div>
@@ -72,6 +72,16 @@
             <div class="text-xs text-emerald-900/70 mb-1">주제(키워드)</div>
             <input id="topic" class="w-full rounded-xl border p-2" placeholder="예: 고마움, 응원, 사랑, 위로, 미안, 약속..." />
             <div class="text-[10px] text-emerald-900/60 mt-1">예: "감사/thanks, 응원/cheer, 공부/study"</div>
+          </div>
+          <div>
+            <div class="text-xs text-emerald-900/70 mb-1">말투</div>
+            <select id="style" class="w-full rounded-xl border p-2">
+              <option value="formal">존댓말</option>
+              <option value="casual" selected>반말</option>
+              <option value="dialect">사투리</option>
+              <option value="cute">귀여운</option>
+              <option value="terse">건조(짧게)</option>
+            </select>
           </div>
         </div>
 
@@ -113,81 +123,47 @@
   <div id="toast" class="toast">복사 완료!</div>
 
   <script>
-  // ===== 1) 역할(화자/청자) 50가지씩 =====
-  // tone: "formal" | "casual" | "either"
-  // groups: 관계/도메인 태그 (가중치 매칭에 사용)
+  /* ===================== 데이터 ===================== */
+  // 50개 역할(화자/청자 공통) — tone은 기본 선호(가중치용)
   const ROLES = [
-    // 가족/친지
-    ["me","나","either",["friend"]],
-    ["we","우리","either",["group"]],
-    ["friend","친구","casual",["friend"]],
-    ["bestie","베프","casual",["friend"]],
-    ["lover","연인","casual",["friend"]],
-    ["spouse","배우자","casual",["family"]],
-    ["fiance","약혼자","casual",["friend","family"]],
-    ["crush","썸","casual",["friend"]],
-    ["mom","엄마","casual",["family","elder"]],
-    ["dad","아빠","casual",["family","elder"]],
-    ["parents","부모님","formal",["family","elder"]],
-    ["son","아들","casual",["family","younger"]],
-    ["daughter","딸","casual",["family","younger"]],
-    ["bro","형/오빠","casual",["family","elder"]],
-    ["sis","누나/언니","casual",["family","elder"]],
-    ["yngsibling","동생","casual",["family","younger"]],
-    ["grand","할머니/할아버지","formal",["family","elder"]],
-    ["auntuncle","이모/삼촌","formal",["family","elder"]],
-    ["cousin","사촌","casual",["family"]],
-    ["inlaw","시댁/처가","formal",["family","elder"]],
+    ["me","나","either",["friend"]],["we","우리","either",["group"]],
+    ["friend","친구","casual",["friend"]],["bestie","베프","casual",["friend"]],
+    ["lover","연인","casual",["friend"]],["spouse","배우자","casual",["family"]],
+    ["fiance","약혼자","casual",["friend","family"]],["crush","썸","casual",["friend"]],
+    ["mom","엄마","casual",["family","elder"]],["dad","아빠","casual",["family","elder"]],
+    ["parents","부모님","formal",["family","elder"]],["son","아들","casual",["family","younger"]],
+    ["daughter","딸","casual",["family","younger"]],["bro","형/오빠","casual",["family","elder"]],
+    ["sis","누나/언니","casual",["family","elder"]],["yngsibling","동생","casual",["family","younger"]],
+    ["grand","할머니/할아버지","formal",["family","elder"]],["auntuncle","이모/삼촌","formal",["family","elder"]],
+    ["cousin","사촌","casual",["family"]],["inlaw","시댁/처가","formal",["family","elder"]],
 
-    // 학교
-    ["teacher","선생님","formal",["school","elder"]],
-    ["prof","교수님","formal",["school","elder"]],
-    ["homeroom","담임선생님","formal",["school","elder"]],
-    ["senior","선배","formal",["school","elder"]],
-    ["junior","후배","casual",["school","younger"]],
-    ["classmate","반친구","casual",["school","friend"]],
-    ["clubmate","동아리친구","casual",["school","friend"]],
-    ["coach","코치","formal",["school","sports"]],
+    ["teacher","선생님","formal",["school","elder"]],["prof","교수님","formal",["school","elder"]],
+    ["homeroom","담임선생님","formal",["school","elder"]],["senior","선배","formal",["school","elder"]],
+    ["junior","후배","casual",["school","younger"]],["classmate","반친구","casual",["school","friend"]],
+    ["clubmate","동아리친구","casual",["school","friend"]],["coach","코치","formal",["school","sports"]],
 
-    // 직장
-    ["boss","상사","formal",["work","elder"]],
-    ["ceo","사장님","formal",["work","elder"]],
-    ["lead","팀장님","formal",["work","elder"]],
-    ["manager","매니저","formal",["work","elder"]],
-    ["coworker","동료","either",["work"]],
-    ["hr","인사팀","formal",["work"]],
-    ["client","고객사","formal",["work","service"]],
-    ["customer","고객","formal",["service"]],
-    ["vendor","협력업체","formal",["work"]],
-    ["partner","파트너사","formal",["work"]],
-    ["intern","인턴","casual",["work","younger"]],
-    ["team","팀원","either",["work","group"]],
+    ["boss","상사","formal",["work","elder"]],["ceo","사장님","formal",["work","elder"]],
+    ["lead","팀장님","formal",["work","elder"]],["manager","매니저","formal",["work","elder"]],
+    ["coworker","동료","either",["work"]],["hr","인사팀","formal",["work"]],
+    ["client","고객사","formal",["work","service"]],["customer","고객","formal",["service"]],
+    ["vendor","협력업체","formal",["work"]],["partner","파트너사","formal",["work"]],
+    ["intern","인턴","casual",["work","younger"]],["team","팀원","either",["work","group"]],
 
-    // 생활서비스/커뮤니티
-    ["barista","바리스타","formal",["service"]],
-    ["cashier","계산원","formal",["service"]],
-    ["delivery","배달기사님","formal",["service"]],
-    ["driver","기사님","formal",["service"]],
-    ["doctor","의사선생님","formal",["service","elder"]],
-    ["nurse","간호사님","formal",["service"]],
-    ["pharmacist","약사님","formal",["service"]],
-    ["trainer","트레이너","formal",["sports","service"]],
-    ["pastor","목사님","formal",["community","elder"]],
-    ["mentor","멘토","formal",["community"]],
-    ["neighbor","이웃","either",["community"]],
-    ["roommate","룸메","casual",["community","friend"]],
-    ["landlord","집주인","formal",["community","elder"]],
-    ["guard","경비원님","formal",["community","service"]],
-    ["librarian","사서님","formal",["service","school"]],
-    ["police","경찰관님","formal",["service"]],
+    ["barista","바리스타","formal",["service"]],["cashier","계산원","formal",["service"]],
+    ["delivery","배달기사님","formal",["service"]],["driver","기사님","formal",["service"]],
+    ["doctor","의사선생님","formal",["service","elder"]],["nurse","간호사님","formal",["service"]],
+    ["pharmacist","약사님","formal",["service"]],["trainer","트레이너","formal",["sports","service"]],
+    ["pastor","목사님","formal",["community","elder"]],["mentor","멘토","formal",["community"]],
+    ["neighbor","이웃","either",["community"]],["roommate","룸메","casual",["community","friend"]],
+    ["landlord","집주인","formal",["community","elder"]],["guard","경비원님","formal",["community","service"]],
+    ["librarian","사서님","formal",["service","school"]],["police","경찰관님","formal",["service"]],
   ];
-
-  // 50개로 확장: 위 50개를 SPEAKERS/LISTENERS 양쪽에 동일 사용
   const SPEAKERS = ROLES.map(([id,label,tone,groups])=>({id,label,tone,groups}));
   const LISTENERS = ROLES.map(([id,label,tone,groups])=>({id,label,tone,groups}));
 
-  // ===== 2) 장소 20가지 (그대로 사용) =====
+  // 장소 + '선택 안 함'
   const PLACES = [
+    { id:"any", label:"선택 안 함", groups:[] },
     { id:"chat",label:"채팅중",groups:["chat"] }, { id:"home",label:"집",groups:["home"] },
     { id:"school",label:"학교",groups:["school"] }, { id:"class",label:"수업",groups:["school"] },
     { id:"office",label:"회사",groups:["work"] }, { id:"cafe",label:"카페",groups:["service"] },
@@ -200,7 +176,7 @@
     { id:"church",label:"교회",groups:["community"] }, { id:"studyroom",label:"스터디룸",groups:["school"] },
   ];
 
-  // ===== 3) 토픽 표준화 =====
+  // 주제 표준화
   const TOPIC_MAP = {
     "고마움":"thanks","감사":"thanks","thanks":"thanks",
     "응원":"cheer","화이팅":"cheer","격려":"cheer","칭찬":"cheer",
@@ -213,101 +189,31 @@
     "공부":"study","일":"work","업무":"work","회의":"work"
   };
 
-  // ===== 4) 멘트 템플릿 → 8자 이내 자동 생성 (400+) =====
-  // tone: "formal" | "casual" | "either"
-  // groups: 문맥 태그(매칭 가중치용)
+  // 템플릿(고정 + 어근 조합) — 8자 자동 필터
   const TEMPLATES = {
-    greeting: {
-      fixed: [
-        ["안녕!", "either",[]],["안녕하세요","formal",[]],["하이하이","casual",[]],
-        ["반가워요","formal",[]],["반가워","casual",[]],["좋은아침","either",[]],
-        ["굿밤~","either",[]],["왔어?","casual",["friend"]],["왔어요?","formal",[]],
-      ]
-    },
-    farewell: {
-      fixed: [
-        ["잘가요","formal",[]],["잘가","casual",[]],["또 보자","casual",["friend"]],
-        ["또 봬요","formal",[]],["다음에 봐","either",[]],["이따 봐","either",["chat"]],
-      ]
-    },
+    greeting: { fixed: [["안녕!","either",[]],["안녕하세요","formal",[]],["하이하이","casual",[]],["반가워요","formal",[]],["반가워","casual",[]],["좋은아침","either",[]],["왔어?","casual",["friend"]],["왔어요?","formal",[]]] },
+    farewell: { fixed: [["잘가요","formal",[]],["잘가","casual",[]],["또 보자","casual",["friend"]],["또 봬요","formal",[]],["다음에 봐","either",[]],["이따 봐","either",["chat"]]] },
     thanks: {
-      stems: [
-        ["감사", ["합니다","해요","해요!"], "formal", []],
-        ["고맙", ["습니다","습니다!"], "formal", []],
-      ],
-      fixed: [
-        ["고마워","casual",["friend"]],["고마워!","casual",["friend"]],
-        ["덕분이에요","formal",[]],["덕분이야","casual",[]],["정말감사","either",[]],
-        ["늘 고마워","casual",["friend"]],
-      ]
+      stems: [["감사",["합니다","해요","해요!"],"formal",[]],["고맙",["습니다","습니다!"],"formal",[]]],
+      fixed: [["고마워","casual",["friend"]],["고마워!","casual",["friend"]],["덕분이에요","formal",[]],["덕분이야","casual",[]],["정말감사","either",[]],["늘 고마워","casual",["friend"]]]
     },
     cheer: {
-      fixed: [
-        ["화이팅!","either",[]],["파이팅!","either",[]],["힘내요!","formal",[]],
-        ["힘내!","casual",[]],["넌 최고","casual",["friend"]],["최고에요","formal",[]],
-        ["잘했어!","casual",[]],["잘했어요","formal",[]],["멋져요","formal",[]],["대박이야","casual",[]],
-      ],
-      stems: [
-        ["집중",["하자","!", " 부탁"],"either",["work","study"]],
-        ["끝까지",["가자","간다!"],"either",["work"]],
-      ]
+      fixed: [["화이팅!","either",[]],["파이팅!","either",[]],["힘내요!","formal",[]],["힘내!","casual",[]],["넌 최고","casual",["friend"]],["최고에요","formal",[]],["잘했어!","casual",[]],["잘했어요","formal",[]],["멋져요","formal",[]],["대박이야","casual",[]]],
+      stems: [["집중",["하자","!"," 부탁"],"either",["work","study"]],["끝까지",["가자","간다!"],"either",["work"]]]
     },
-    love: {
-      fixed: [
-        ["사랑해","casual",["friend"]],["좋아해","casual",[]],["보고싶어","casual",[]],
-        ["아끼어요","formal",[]],["내 편이야","casual",[]],["곁에있어","either",[]],
-        ["함께해","either",["team"]],
-      ]
-    },
-    comfort: {
-      fixed: [
-        ["괜찮아요","formal",[]],["괜찮아","casual",[]],["천천히 해","either",[]],
-        ["네 탓 아냐","either",[]],["내가 들을게","either",[]],["힘들었지","casual",[]],
-        ["수고했어","casual",[]],["수고하셨어요","formal",[]],
-      ]
-    },
-    apology: {
-      stems: [
-        ["죄송",["합니다","해요"],"formal",[]],
-        ["미안",["해","해요"],"either",[]],
-      ],
-      fixed: [["내 실수야","casual",[]],["다음엔 더","either",[]]]
-    },
-    promise: {
-      fixed: [
-        ["곧 가요","formal",["travel"]],["곧갈게","casual",["travel"]],["금방가요","formal",["travel"]],
-        ["금방가!","casual",["travel"]],["곧 도착","either",["travel"]],["기다려줘","either",["love"]],
-        ["연락줘","either",["chat"]],["이따 봐","either",["chat"]],
-      ]
-    },
-    birthday: {
-      fixed: [
-        ["생일 축하","either",[]],["해피데이","either",[]],["축하해요","formal",[]],["축하해","casual",[]]
-      ]
-    },
+    love: { fixed: [["사랑해","casual",["friend"]],["좋아해","casual",[]],["보고싶어","casual",[]],["아끼어요","formal",[]],["내 편이야","casual",[]],["곁에있어","either",[]],["함께해","either",["team"]]] },
+    comfort: { fixed: [["괜찮아요","formal",[]],["괜찮아","casual",[]],["천천히 해","either",[]],["네 탓 아냐","either",[]],["내가 들을게","either",[]],["힘들었지","casual",[]],["수고했어","casual",[]],["수고하셨어요","formal",[]]] },
+    apology: { stems: [["죄송",["합니다","해요"],"formal",[]],["미안",["해","해요"],"either",[]]], fixed: [["내 실수야","casual",[]],["다음엔 더","either",[]]] },
+    promise: { fixed: [["곧 가요","formal",["travel"]],["곧갈게","casual",["travel"]],["금방가요","formal",["travel"]],["금방가!","casual",["travel"]],["곧 도착","either",["travel"]],["기다려줘","either",["love"]],["연락줘","either",["chat"]],["이따 봐","either",["chat"]]] },
+    birthday: { fixed: [["생일 축하","either",[]],["해피데이","either",[]],["축하해요","formal",[]],["축하해","casual",[]]] },
     anniv: { fixed: [["우리의 날","either",[]],["함께라 좋아","either",[]]] },
     late: { fixed: [["조금 늦음","either",["travel"]],["길 막혀","either",["travel"]],["먼저 가","either",["travel"]]] },
     busy: { fixed: [["바쁠 땐 톡","either",["work","school"]],["잠시만요","formal",[]],["조금만요","formal",[]]] },
-    sick: {
-      fixed: [
-        ["몸 챙겨","either",[]],["감기 조심","either",[]],["약 먹어","casual",[]],["물 마셔","either",[]],
-        ["따뜻이 입어","either",[]],["쉬자","casual",[]],["편히 쉬어요","formal",[]]
-      ]
-    },
-    study: {
-      fixed: [
-        ["수업 시작","either",["school"]],["숙제 했니?","casual",["school"]],["집중하자","either",["school"]],
-        ["조용히 해","either",["school"]],["끝나고 톡","either",["school","work"]]
-      ]
-    },
-    work: {
-      fixed: [
-        ["회의 고고","either",["work"]],["자료 부탁","formal",["work"]],["회신 부탁","formal",["work"]],
-        ["지금 가능?","either",["work","chat"]],["좋아요","either",["work"]],
-      ]
-    },
-    cafe: { fixed: [["커피 한 잔","either",["service"]],["자리 있어","either",["service"]],["자리 없니?","casual",["service"]]] },
-    sports: { fixed: [["굿플레이","either",["sports"]],["패스 줘!","casual",["sports"]],["팀 고!","either",["sports","team"]]] },
+    sick: { fixed: [["몸 챙겨","either",[]],["감기 조심","either",[]],["약 먹어","casual",[]],["물 마셔","either",[]],["따뜻이 입어","either",[]],["쉬자","casual",[]],["편히 쉬어요","formal",[]]] },
+    study:{ fixed: [["수업 시작","either",["school"]],["숙제 했니?","casual",["school"]],["집중하자","either",["school"]],["조용히 해","either",["school"]],["끝나고 톡","either",["school","work"]]] },
+    work:{ fixed: [["회의 고고","either",["work"]],["자료 부탁","formal",["work"]],["회신 부탁","formal",["work"]],["지금 가능?","either",["work","chat"]],["좋아요","either",["work"]]] },
+    cafe:{ fixed: [["커피 한 잔","either",["service"]],["자리 있어","either",["service"]],["자리 없니?","casual",["service"]]] },
+    sports:{ fixed: [["굿플레이","either",["sports"]],["패스 줘!","casual",["sports"]],["팀 고!","either",["sports","team"]]] },
     goodnight: { fixed: [["잘자요","formal",["love"]],["잘 자","casual",["love"]]] },
   };
 
@@ -321,68 +227,128 @@
     }
     for(const [topic,conf] of Object.entries(TEMPLATES)){
       (conf.fixed||[]).forEach(([txt,tone,groups])=>add(txt,topic,tone,groups));
-      (conf.stems||[]).forEach(([stem,ends,tone,groups])=>{
-        ends.forEach(end=>add(stem+end,topic,tone,groups));
-      });
+      (conf.stems||[]).forEach(([stem,ends,tone,groups])=>{ ends.forEach(end=>add(stem+end,topic,tone,groups)); });
     }
-    // 고정 추가(관계/장소 특화)
-    const extras = [
-      ["엄마 사랑","love","casual",["family","elder"]],
-      ["선생님 감사","thanks","formal",["school","elder"]],
-      ["팀 고!", "cheer","either",["team","work"]],
-      ["회의 후 톡","work","formal",["work"]],
-      ["산책 갈래","love","casual",["home","travel"]],
-      ["영화 볼까","love","casual",["home","travel"]],
-      ["곧 출발","promise","either",["travel"]],
-      ["도착했어","promise","either",["travel"]],
-      ["평안하세요","comfort","formal",["community"]],
-      ["축복해요","comfort","formal",["community"]],
-      ["기도할게","comfort","either",["community"]],
-      ["굿잡!","cheer","either",["work"]],
-      ["나이스","cheer","either",["sports"]],
-      ["반가워요","greeting","formal",[]],
-      ["반가워","greeting","casual",[]],
-    ];
-    extras.forEach(([t,topic,tone,groups])=>add(t,topic,tone,groups));
+    // 관계/장소 특화 보강
+    [["엄마 사랑","love","casual",["family","elder"]],
+     ["선생님 감사","thanks","formal",["school","elder"]],
+     ["회의 후 톡","work","formal",["work"]],
+     ["산책 갈래","love","casual",["home","travel"]],
+     ["영화 볼까","love","casual",["home","travel"]],
+     ["곧 출발","promise","either",["travel"]],
+     ["도착했어","promise","either",["travel"]],
+     ["평안하세요","comfort","formal",["community"]],
+     ["축복해요","comfort","formal",["community"]],
+     ["기도할게","comfort","either",["community"]],
+     ["굿잡!","cheer","either",["work"]],
+     ["나이스","cheer","either",["sports"]],
+     ["반가워요","greeting","formal",[]],
+     ["반가워","greeting","casual",[]]]
+     .forEach(([t,topic,tone,groups])=>add(t,topic,tone,groups));
     return out;
   }
+  const PHRASES = buildPhrases(); // 400개+
 
-  const PHRASES = buildPhrases(); // 400개 이상 생성
+  /* ===================== 말투 변환 ===================== */
+  // style: formal / casual / dialect / cute / terse
+  const shortMap = new Map([
+    ["감사합니다","감사"],["감사해요","감사"],["감사","감사"],
+    ["고마워요","고마워"],["괜찮아요","괜찮아"],["괜찮을 거야","괜찮아"],
+    ["사랑해요","사랑해"],["축하해요","축하"],["축하해","축하"],
+    ["잘했어요","잘했어"],["수고하셨어요","수고했어"],["수고했어","수고"],
+    ["생일 축하","축하"],["좋은아침","아침굿"],["조금 늦음","지각중"],
+    ["이따 봐","이따봐"],["곧 도착","곧도착"],["연락줘","연락좀"],
+  ]);
 
-  // ===== 5) 가중치 매칭 로직 (토픽/관계/장소/말투) =====
-  const topicOf = (raw)=>{ if(!raw) return null; const key=raw.trim().toLowerCase(); for(const [k,v] of Object.entries(TOPIC_MAP)){ if(k.toLowerCase()===key) return v; } return null; };
+  function toFormal(t){
+    // 평서/명령을 가능한 '요/니다'로
+    let s=t;
+    s=s.replace(/!$/,""); // 느낌표 제거
+    s=s.replace(/해$/,"해요").replace(/해\?$/,"하나요?");
+    s=s.replace(/가!$/,"가요").replace(/가$/,"가요");
+    s=s.replace(/왔어\?/,"왔어요?");
+    if(!/[요|니다|세요|\?]$/.test(s)) s += "요";
+    return fit8(s);
+  }
+  function toCasual(t){
+    let s=t;
+    s=s.replace(/합니다$/,"해").replace(/해요!?$/,"해").replace(/세요$/,"해");
+    s=s.replace(/가요$/,"가").replace(/왔어요\?/,"왔어?");
+    s=s.replace(/요$/,"");
+    return fit8(s);
+  }
+  function toDialect(t){
+    // 가벼운 부산권 느낌: ~데이, ~하이, ~심다
+    let s=toCasual(t);
+    s=s.replace(/고마워/g,"고맙데이").replace(/감사/g,"고맙심다");
+    s=s.replace(/사랑해/g,"사랑한데이").replace(/미안해/g,"미안하이");
+    s=s.replace(/괜찮아/g,"괜찮데이").replace(/가$/,"간다").replace(/봐$/,"보자");
+    return fit8(s);
+  }
+  function toCute(t){
+    let s=t;
+    s=s.replace(/요$/,"용").replace(/해$/,"해용").replace(/가$/,"가용").replace(/자$/,"자아").replace(/줘$/,"줘용");
+    if(s.length<=7 && !/[♡]/.test(s)) s += "♡"; // 여유 있으면 하트
+    return fit8(s);
+  }
+  function toTerse(t){
+    let s = shortMap.get(t) || t;
+    s=s.replace(/\s+/g,""); // 공백 제거로 짧게
+    s=s.replace(/해요|합니다|하세요|합니다/g,"해");
+    s=s.replace(/가요/g,"가");
+    if(s.length>8) s=s.slice(0,8);
+    return s;
+  }
+  function fit8(s){ return s.length>8 ? s.slice(0,8) : s; }
+
+  function applyStyle(text, style){
+    switch(style){
+      case "formal": return toFormal(text);
+      case "casual": return toCasual(text);
+      case "dialect": return toDialect(text);
+      case "cute":   return toCute(text);
+      case "terse":  return toTerse(text);
+      default: return text;
+    }
+  }
+
+  /* ===================== 스코어링 ===================== */
+  // style→tone 기대치(가중치 계산용)
+  const styleTone = (style)=> style==="formal" ? "formal" : "casual";
+
+  function topicOf(raw){ if(!raw) return null; const key=raw.trim().toLowerCase(); for(const [k,v] of Object.entries(TOPIC_MAP)){ if(k.toLowerCase()===key) return v; } return null; }
   const toastMsg = (msg)=>{ const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show"); setTimeout(()=>el.classList.remove("show"),1200); };
 
   function scorePhrase(ph, ctx){
-    if(!withinLimit(ph.t, ctx.len)) return -999;
-
+    // 길이 체크는 스타일 변환 후에 할 거라 여기선 base만
     let s = 0;
-    // 1) 토픽
-    if(ctx.topic && ph.topic===ctx.topic) s += 4;
+    // 1) 주제(가장 중요)
+    if(ctx.topic && ph.topic===ctx.topic) s += 6;
 
-    // 2) 말투(상대방 기본 톤과 매칭)
-    const targetTone = ctx.listener.tone; // formal/casual/either
-    if(targetTone==="formal" && ph.tone==="formal") s+=3;
-    if(targetTone==="casual" && ph.tone==="casual") s+=3;
-    if(targetTone==="formal" && ph.tone==="casual") s-=2;
-    if(targetTone==="casual" && ph.tone==="formal") s-=1;
-    // either는 감점 없음
-
-    // 3) 관계/장소 그룹 매칭
-    const bag = new Set([...(ctx.speaker.groups||[]), ...(ctx.listener.groups||[]), ...(ctx.place.groups||[])]);
+    // 2) 관계/장소 그룹 매칭
+    const bag = new Set([...(ctx.speaker.groups||[]), ...(ctx.listener.groups||[]), ...(ctx.place?.groups||[])]);
     const hit = (ph.groups||[]).filter(g=>bag.has(g)).length;
-    s += hit * 2;
+    s += hit * 3;
 
-    // 4) 장소 강한 매칭(명시적 place 태그 우선)
-    if(ctx.place.groups.some(g=> (ph.groups||[]).includes(g))) s += 1;
+    // 3) 장소가 '선택 안 함'이면 패널티/보너스 없음, 아닌 경우 약한 보정
+    if(ctx.place && ctx.place.id!=="any"){
+      if(ctx.place.groups.some(g=> (ph.groups||[]).includes(g))) s += 2;
+    }
 
-    // 5) 길이 가산(짧고 또렷한 멘트 선호)
-    s += (8 - ph.t.length) * 0.2;
+    // 4) 말투 기대치(청자 기본 톤 vs 선택한 말투)
+    const want = styleTone(ctx.style);
+    if(ctx.listener.tone==="formal" && want==="formal") s += 2;
+    if(ctx.listener.tone==="casual" && want==="casual") s += 2;
+    if(ctx.listener.tone==="formal" && want==="casual") s -= 1;
+    if(ctx.listener.tone==="casual" && want==="formal") s -= 0.5;
+
+    // 5) 짧을수록 약간 가산(최종 변환 후 재가중)
+    s += (8 - Math.min(ph.t.length,8)) * 0.15;
 
     return s;
   }
 
-  // ===== 6) UI 바인딩 =====
+  /* ===================== UI/상태 ===================== */
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -394,8 +360,9 @@
   const state = {
     speaker: SPEAKERS[0],
     listener: LISTENERS[1],
-    place: PLACES[0],
+    place: PLACES[0], // 선택 안 함
     topic: "",
+    style: "casual",
     len: 8,
     count: 24,
     favs: JSON.parse(localStorage.getItem("emo-favs")||"[]")
@@ -405,48 +372,55 @@
     const t = topicOf(state.topic);
     $("#chips").innerHTML = `
       ${t ? `<span class="chip">주제: ${t}</span>` : ""}
-      <span class="chip">화자: ${state.speaker.label}</span>
-      <span class="chip">청자: ${state.listener.label}</span>
+      <span class="chip">보내는 사람: ${state.speaker.label}</span>
+      <span class="chip">받는 사람: ${state.listener.label}</span>
       <span class="chip">장소: ${state.place.label}</span>
+      <span class="chip">말투: ${({"formal":"존댓말","casual":"반말","dialect":"사투리","cute":"귀여운","terse":"건조"})[state.style]}</span>
     `;
   }
 
   function recommend(){
-    const ctx = { topic: topicOf(state.topic), len: state.len, speaker: state.speaker, listener: state.listener, place: state.place };
-    const scored = PHRASES.map(p=>({p, s: scorePhrase(p,ctx)})).filter(x=>x.s>-999).sort((a,b)=>b.s-a.s);
-    // 다양성 섞기
-    const top = scored.slice(0, 160);
-    const shuffled = [...top].sort(()=>Math.random()-0.35);
-    const unique = new Set();
-    const pick = [];
-    for(const item of shuffled){
-      const txt=item.p.t;
-      if(!unique.has(txt)){ unique.add(txt); pick.push(item.p); }
+    const ctx = { topic: topicOf(state.topic), len: state.len, style: state.style, speaker: state.speaker, listener: state.listener, place: state.place };
+    const scored = PHRASES.map(p=>({p, s: scorePhrase(p,ctx)})).sort((a,b)=>b.s-a.s);
+
+    // 상위 후보 추림 + 길이/말투 변환 적용 + 재가중(짧을수록 가산)
+    const candidates = [];
+    for(const {p, s} of scored.slice(0,220)){
+      const styled = applyStyle(p.t, state.style);
+      if(!withinLimit(styled, state.len)) continue;
+      let score = s + (8 - styled.length) * 0.2; // 최종 길이 보정
+      candidates.push({ text: styled, meta:p, score });
+    }
+
+    // 다양성 섞기 + 중복 제거
+    candidates.sort((a,b)=>b.score-a.score);
+    const shuffled = [...candidates.slice(0,160)].sort(()=>Math.random()-0.35);
+    const pick=[]; const seen=new Set();
+    for(const c of shuffled){
+      if(seen.has(c.text)) continue;
+      seen.add(c.text); pick.push(c);
       if(pick.length>=state.count) break;
     }
-    if(pick.length===0){
-      const pool = PHRASES.filter(p=>withinLimit(p.t,state.len));
-      pick.push(...pool.sort(()=>Math.random()-0.5).slice(0,state.count));
-    }
+
     // 렌더
     $("#list").innerHTML = pick.map(cardHTML).join("");
     bindCardEvents();
   }
 
-  function cardHTML(ph){
-    const starred = state.favs.includes(ph.t);
+  function cardHTML(c){
+    const t=c.text, p=c.meta, starred = state.favs.includes(t);
     return `
       <div class="rounded-2xl border bg-white/90 hover:shadow transition-shadow p-3">
         <div class="flex items-start justify-between gap-2">
-          <div class="text-base font-semibold leading-snug break-keep">${ph.t}</div>
+          <div class="text-base font-semibold leading-snug break-keep">${t}</div>
           <div class="flex items-center gap-1">
-            <button class="btn-lite px-2 py-1 text-xs copy" data-t="${ph.t}">복사</button>
-            <button class="btn-lite px-2 py-1 text-xs star" data-t="${ph.t}" aria-label="즐겨찾기">${starred?"★":"☆"}</button>
+            <button class="btn-lite px-2 py-1 text-xs copy" data-t="${t}">복사</button>
+            <button class="btn-lite px-2 py-1 text-xs star" data-t="${t}" aria-label="즐겨찾기">${starred?"★":"☆"}</button>
           </div>
         </div>
         <div class="mt-2 flex flex-wrap gap-1">
-          ${ph.topic?`<span class="chip">${ph.topic}</span>`:""}
-          ${(ph.groups||[]).slice(0,2).map(t=>`<span class="chip">${t}</span>`).join("")}
+          ${p.topic?`<span class="chip">${p.topic}</span>`:""}
+          ${(p.groups||[]).slice(0,2).map(x=>`<span class="chip">${x}</span>`).join("")}
         </div>
       </div>
     `;
@@ -486,30 +460,33 @@
     }));
   }
 
-  // ===== 이벤트 & 초기화 =====
-  $("#speaker").addEventListener("change",(e)=>{ state.speaker = SPEAKERS.find(x=>x.id===e.target.value); renderChips(); recommend(); });
-  $("#listener").addEventListener("change",(e)=>{ state.listener = LISTENERS.find(x=>x.id===e.target.value); renderChips(); recommend(); });
-  $("#place").addEventListener("change",(e)=>{ state.place = PLACES.find(x=>x.id===e.target.value); renderChips(); recommend(); });
+  /* 이벤트 & 초기화 */
+  const $sp = $("#speaker"), $li=$("#listener"), $pl=$("#place"), $style=$("#style");
+  const fillSelectEl=(el, items, cur)=>{ el.innerHTML=items.map(o=>`<option value="${o.id}">${o.label}</option>`).join(""); el.value=cur.id; }
+  fillSelectEl($sp, SPEAKERS, state.speaker);
+  fillSelectEl($li, LISTENERS, state.listener);
+  fillSelectEl($pl, PLACES, state.place);
+
+  $sp.addEventListener("change",(e)=>{ state.speaker = SPEAKERS.find(x=>x.id===e.target.value); renderChips(); recommend(); });
+  $li.addEventListener("change",(e)=>{ state.listener = LISTENERS.find(x=>x.id===e.target.value); renderChips(); recommend(); });
+  $pl.addEventListener("change",(e)=>{ state.place = PLACES.find(x=>x.id===e.target.value); renderChips(); recommend(); });
   $("#topic").addEventListener("input",(e)=>{ state.topic=e.target.value; renderChips(); recommend(); });
   $("#len").addEventListener("input",(e)=>{ state.len=+e.target.value; document.getElementById("lenLabel").textContent=state.len; recommend(); });
   $("#count").addEventListener("input",(e)=>{ const v=Math.max(1,Math.min(60,+e.target.value||1)); state.count=v; recommend(); });
+  $style.addEventListener("change",(e)=>{ state.style=e.target.value; renderChips(); recommend(); });
+
   $("#rand").addEventListener("click",()=>{
     const r = (arr)=>arr[Math.floor(Math.random()*arr.length)];
-    $("#speaker").value = (state.speaker = r(SPEAKERS)).id;
-    $("#listener").value = (state.listener = r(LISTENERS)).id;
-    $("#place").value = (state.place = r(PLACES)).id;
+    $sp.value = (state.speaker = r(SPEAKERS)).id;
+    $li.value = (state.listener = r(LISTENERS)).id;
+    $pl.value = (state.place = r(PLACES)).id;
     const topics = Object.keys(TOPIC_MAP);
     $("#topic").value = state.topic = r(topics);
+    $("#style").value = state.style = r(["formal","casual","dialect","cute","terse"]);
     renderChips(); recommend();
   });
   $("#reshuffle").addEventListener("click",()=>{ window.scrollTo({top:document.body.scrollHeight, behavior:"smooth"}); recommend(); });
   $("#clearFavs").addEventListener("click",()=>{ state.favs=[]; localStorage.setItem("emo-favs","[]"); refreshFavs(); });
-
-  // 최초 렌더
-  // 드롭다운 채우기
-  document.getElementById("speaker").value = state.speaker.id;
-  document.getElementById("listener").value = state.listener.id;
-  document.getElementById("place").value = state.place.id;
 
   const toMake=()=>{$("#tab-make").classList.remove("hidden"); $("#tab-favs").classList.add("hidden");
     $("#tab-make-btn").classList.remove("text-stone-500"); $("#tab-favs-btn").classList.add("text-stone-500");}
